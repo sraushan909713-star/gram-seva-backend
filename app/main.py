@@ -2,34 +2,41 @@
 # main.py — Application Entry Point
 # ============================================================
 # This is the first file FastAPI reads when the server starts.
-# It creates the FastAPI app instance and registers everything:
-# routers, middleware, startup events, etc.
+# It creates the FastAPI app instance and registers everything.
 #
-# Think of this as the front door of your entire backend.
-# Every API request enters through here.
+# IMPORTS FROM: app/database.py (engine, Base)
+#               app/models/user.py (User table)
+#               app/models/otp.py  (OTP table)
+# IMPORTED BY:  nothing — this is the top of the chain
+#
+# STARTUP SEQUENCE:
+#   1. Models are imported → they register themselves with Base
+#   2. create_all() sees all registered models → creates tables
+#   3. FastAPI app is created
+#   4. Routers are registered (we'll add these soon)
+#   5. Server starts listening for requests
 # ============================================================
 
 from fastapi import FastAPI
 from app.database import engine, Base
 
-# This creates all database tables automatically on startup.
-# SQLAlchemy looks at all models that inherit from Base and
-# creates their tables if they don't already exist.
-# Safe to run multiple times — it skips existing tables.
+# Importing models so SQLAlchemy knows they exist before
+# create_all() runs. Without these imports, the tables
+# would never be created — Base wouldn't know about them.
+from app.models import user, otp
+
+# Create all tables that are registered with Base.
+# Safe to run every startup — skips tables that already exist.
 Base.metadata.create_all(bind=engine)
 
 # Create the FastAPI app instance.
-# title and version appear in the auto-generated API docs.
 app = FastAPI(
     title="Gram Seva API",
     version="1.0.0",
     description="Backend API for Gram Seva — Jagruk Durbe"
 )
 
-
-# A simple health check endpoint.
-# Visit http://127.0.0.1:8000/ in your browser to confirm
-# the server is running. Returns a JSON response.
+# Health check endpoint — confirms the server is running.
 @app.get("/")
 def root():
     return {"message": "Gram Seva API is running 🏡"}
