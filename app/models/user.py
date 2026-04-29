@@ -62,6 +62,8 @@ class User(Base):
 
     is_verified = Column(Boolean, default=False, nullable=False)
 
+    badge = Column(String, default="none", nullable=False)
+
     verified_by = Column(String, nullable=True)
 
     verified_at = Column(DateTime, nullable=True)

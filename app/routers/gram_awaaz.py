@@ -1,0 +1,198 @@
+# app/routers/gram_awaaz.py
+# ─────────────────────────────────────────────
+# Gram Awaaz — Village Voice
+# Villagers raise civic complaints with evidence.
+# Anyone can read. Any logged-in user can post or upvote.
+# ─────────────────────────────────────────────
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+from typing import List, Optional
+
+from app.database import get_db
+from app.models.gram_awaaz import GramAwaaz, GramAwaazUpvote, Department
+from app.models.user import User
+from app.schemas.gram_awaaz import (
+    GramAwaazCreate, GramAwaazResponse,
+    GramAwaazListResponse, UpvoteResponse
+)
+from app.core.security import decode_access_token
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+router = APIRouter(
+    prefix="/gram-awaaz",
+    tags=["Gram Awaaz"]
+)
+
+bearer_scheme = HTTPBearer()
+
+
+# ─────────────────────────────────────────────
+# HELPER: Get current logged-in user
+# ─────────────────────────────────────────────
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    db: Session = Depends(get_db)
+) -> User:
+    token = credentials.credentials
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token.")
+    user = db.query(User).filter(User.id == payload.get("sub")).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found.")
+    return user
+
+
+# ─────────────────────────────────────────────
+# HELPER: Admin check (for delete)
+# ─────────────────────────────────────────────
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role not in ("admin", "super_admin"):
+        raise HTTPException(status_code=403, detail="Access denied.")
+    return current_user
+
+
+# ─────────────────────────────────────────────
+# PUBLIC ENDPOINTS
+# ─────────────────────────────────────────────
+
+@router.get("", response_model=List[GramAwaazListResponse])
+def list_posts(
+    department: Optional[Department] = Query(None, description="Filter by department"),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns all active Gram Awaaz posts.
+    Sorted by upvote count — most supported issues appear first.
+    No login required — anyone can read complaints.
+    """
+    query = db.query(GramAwaaz).filter(GramAwaaz.is_active == True)
+
+    if department:
+        query = query.filter(GramAwaaz.department == department)
+
+    # ✅ Most upvoted first — pressure rises to the top
+    return query.order_by(GramAwaaz.upvote_count.desc()).all()
+
+
+@router.get("/{post_id}", response_model=GramAwaazResponse)
+def get_post(post_id: str, db: Session = Depends(get_db)):
+    """
+    Returns full details of a single complaint post.
+    No login required.
+    """
+    post = db.query(GramAwaaz).filter(
+        GramAwaaz.id == post_id,
+        GramAwaaz.is_active == True
+    ).first()
+
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found.")
+
+    return post
+
+
+# ─────────────────────────────────────────────
+# LOGGED-IN USER ENDPOINTS
+# ─────────────────────────────────────────────
+
+@router.post("", response_model=GramAwaazResponse, status_code=201)
+def create_post(
+    data: GramAwaazCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Creates a new Gram Awaaz complaint post.
+    Any logged-in user can post.
+    Photo is mandatory — enforces evidence-over-emotion principle.
+    """
+    post = GramAwaaz(
+        title=data.title,
+        description=data.description,
+        location=data.location,
+        affected_count=data.affected_count,
+        department=data.department,
+        demand=data.demand,
+        photo_url_1=data.photo_url_1,   # ✅ CHANGE
+        photo_url_2=data.photo_url_2,   # ✅ ADD
+        photo_url_3=data.photo_url_3,   # ✅ ADD
+        photo_url_4=data.photo_url_4,   # ✅ ADD
+        posted_by=current_user.id
+    )
+    db.add(post)
+    db.commit()
+    db.refresh(post)
+    return post
+
+
+@router.post("/{post_id}/upvote", response_model=UpvoteResponse)
+def upvote_post(
+    post_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Upvotes a Gram Awaaz post.
+    Each user can only upvote a post once.
+    Upvote count is the civic pressure meter — higher = more urgent.
+    """
+    # Check post exists
+    post = db.query(GramAwaaz).filter(
+        GramAwaaz.id == post_id,
+        GramAwaaz.is_active == True
+    ).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found.")
+
+    # Check if user already upvoted this post
+    existing = db.query(GramAwaazUpvote).filter(
+        GramAwaazUpvote.post_id == post_id,
+        GramAwaazUpvote.user_id == current_user.id
+    ).first()
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="You have already upvoted this post."
+        )
+
+    # Record the upvote
+    upvote = GramAwaazUpvote(
+        post_id=post_id,
+        user_id=current_user.id
+    )
+    db.add(upvote)
+
+    # Increment the counter on the post
+    post.upvote_count += 1
+    db.commit()
+
+    return UpvoteResponse(
+        message="Upvote recorded successfully.",
+        upvote_count=post.upvote_count
+    )
+
+
+# ─────────────────────────────────────────────
+# ADMIN-ONLY ENDPOINTS
+# ─────────────────────────────────────────────
+
+@router.delete("/{post_id}", status_code=200)
+def delete_post(
+    post_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    Soft-deletes a post — only Admin or Super Admin can do this.
+    Used to remove fake or abusive posts.
+    """
+    post = db.query(GramAwaaz).filter(GramAwaaz.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found.")
+
+    post.is_active = False
+    db.commit()
+    return {"message": "Post removed successfully."}

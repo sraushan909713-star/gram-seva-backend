@@ -23,6 +23,7 @@ from app.database import Base
 class OTPPurpose(str, enum.Enum):
     registration = "registration"
     login = "login"
+    reset_password = "reset_password"
 
 
 class OTP(Base):
