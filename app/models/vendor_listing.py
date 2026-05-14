@@ -8,7 +8,7 @@
 
 import uuid
 import enum
-from sqlalchemy import Column, String, Boolean, DateTime, Enum, Text, ForeignKey
+from sqlalchemy import Column, String, Boolean, DateTime, Enum, Text, ForeignKey, Float
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -54,7 +54,7 @@ class VendorListing(Base):
     category = Column(Enum(VendorCategory), nullable=False)
 
     # — Pricing ───────────────────────────────────────────────
-    price = Column(String, nullable=False)          # "2100" — stored as string for flexibility
+    price = Column(Float, nullable=False)          # "2100" — stored as string for flexibility
     unit = Column(String, nullable=False)           # "per quintal", "per kg", "per bag"
 
     # — Stock status ──────────────────────────────────────────

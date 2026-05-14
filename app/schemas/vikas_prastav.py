@@ -40,6 +40,8 @@ class VikasPrastavListResponse(BaseModel):
     photo_url_1: str
     upvote_count: int
     posted_by: str
+    poster_name:  Optional[str] = None
+    poster_photo: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -63,6 +65,8 @@ class VikasPrastavResponse(BaseModel):
     photo_url_4: Optional[str] = None
     upvote_count: int
     posted_by: str
+    poster_name:  Optional[str] = None
+    poster_photo: Optional[str] = None
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None

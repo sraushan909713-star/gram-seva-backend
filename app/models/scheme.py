@@ -44,6 +44,8 @@ class Scheme(Base):
     how_to_apply = Column(Text, nullable=False)     # Steps to apply
     official_link = Column(String, nullable=True)   # Government website (optional)
     additional_info = Column(Text, nullable=True)   # Any extra details (optional)
+    youtube_link = Column(String, nullable=True)   # YouTube guide video (optional)   # ✅ ADD
+    documents_required = Column(Text, nullable=False, server_default="Not specified")  # ✅ ADD — docs needed to apply
 
     # ── Category ──────────────────────────────
     category = Column(

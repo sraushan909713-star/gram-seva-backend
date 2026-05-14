@@ -23,7 +23,7 @@ class VendorListingCreate(BaseModel):
     product_name: str                           # "Paddy (Dhan)"
     product_name_hindi: Optional[str] = None   # "धान"
     category: VendorCategory                   # crops / animal_feed
-    price: str                                 # "2100"
+    price: float                                 # "2100"
     unit: str                                  # "per quintal"
     stock_status: StockStatus = StockStatus.in_stock
     notes: Optional[str] = None
@@ -39,7 +39,7 @@ class VendorListingUpdate(BaseModel):
     product_name: Optional[str] = None
     product_name_hindi: Optional[str] = None
     category: Optional[VendorCategory] = None
-    price: Optional[str] = None
+    price: Optional[float] = None
     unit: Optional[str] = None
     stock_status: Optional[StockStatus] = None
     notes: Optional[str] = None
@@ -59,7 +59,7 @@ class VendorListingResponse(BaseModel):
     product_name: str
     product_name_hindi: Optional[str]
     category: VendorCategory
-    price: str
+    price: float
     unit: str
     stock_status: StockStatus
     notes: Optional[str]

@@ -135,6 +135,8 @@ def create_scheme(
         how_to_apply=data.how_to_apply,
         category=data.category,
         official_link=data.official_link,
+        youtube_link=data.youtube_link,                                              # ✅ ADD
+        documents_required=data.documents_required,                                  # ✅ ADD
         additional_info=data.additional_info
     )
     db.add(scheme)

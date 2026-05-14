@@ -19,7 +19,7 @@
 
 from fastapi import FastAPI
 from app.database import engine, Base
-from app.routers import auth, weather, schemes, contact, guides, gram_awaaz, vikas_prastav, gram_sabha, neta_report_card, vendor_listings, job_alerts, community_members
+from app.routers import auth, weather, schemes, contact, guides, gram_awaaz, vikas_prastav, gram_sabha, neta_report_card, vendor_listings, job_alerts, community_members, banners, promises
 
 # Importing models so SQLAlchemy knows they exist before
 # create_all() runs. Without these imports, the tables
@@ -35,6 +35,8 @@ from app.models import neta_report_card as neta_report_card_model
 from app.models import vendor_listing as vendor_listing_model
 from app.models import job_alert as job_alert_model
 from app.models import community_member as community_member_model
+from app.models import banner as banner_model
+from app.models import promise as promise_model
 
 # Create all tables that are registered with Base.
 # Safe to run every startup — skips tables that already exist.
@@ -59,6 +61,8 @@ app.include_router(neta_report_card.router)
 app.include_router(vendor_listings.router)
 app.include_router(job_alerts.router)
 app.include_router(community_members.router)
+app.include_router(banners.router)
+app.include_router(promises.router)
 
 # Health check endpoint — confirms the server is running.
 @app.get("/")

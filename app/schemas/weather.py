@@ -34,3 +34,4 @@ class RainAlertResponse(BaseModel):
     warning_level: str          # Today's warning: "None", "Low", or "Heavy"
     forecast: List[DailyForecast]  # 7-day forecast list
     last_updated: datetime      # When this data was fetched from Open-Meteo
+    current_temp_c: float     # ✅ ADD: current temperature from Open-Meteo's current_weather

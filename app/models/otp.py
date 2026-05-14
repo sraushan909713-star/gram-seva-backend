@@ -24,6 +24,7 @@ class OTPPurpose(str, enum.Enum):
     registration = "registration"
     login = "login"
     reset_password = "reset_password"
+    account_deletion = "account_deletion"
 
 
 class OTP(Base):

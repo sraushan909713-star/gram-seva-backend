@@ -28,6 +28,7 @@ import app.models.neta_report_card
 import app.models.vendor_listing       # ✅ singular — matches actual filename
 import app.models.job_alert            # ✅ singular — matches actual filename
 import app.models.community_member     # ✅ singular — matches actual filename
+import app.models.banner               # ✅ singular — matches actual filename
 
 
 target_metadata = Base.metadata  # ✅ CHANGE: was None

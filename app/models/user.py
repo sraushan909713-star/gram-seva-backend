@@ -56,7 +56,14 @@ class User(Base):
 
     role = Column(Enum(UserRole), default=UserRole.user, nullable=False)
 
+    # The user's CURRENT profile photo (publicly visible).
+    # Editable. When a verified user changes this, badge auto-revokes.
     profile_photo_url = Column(String, nullable=True)
+
+    # The exact photo the admin saw and approved at verification time.
+    # Locked once badge becomes 'durbe_niwasi'. Cleared on revoke.
+    # Gives the admin a permanent audit record of who they trusted.
+    verification_photo_url = Column(String, nullable=True)                # ✅ NEW
 
     is_durbe_resident = Column(Boolean, default=False, nullable=False)
 
@@ -68,10 +75,16 @@ class User(Base):
 
     verified_at = Column(DateTime, nullable=True)
 
-    # Is this account active? False = banned by admin.
-    # We never delete users — we just deactivate them.
+    # Is this account active? False = soft-deleted (by user or admin).
+    # We never hard-delete users — we just deactivate them.
     # This preserves data integrity (their posts, votes etc. remain).
     is_active = Column(Boolean, default=True, nullable=False)
+
+    # When the user self-deleted their account. NULL for active users.
+    # Audit field. Useful if we add a 30-day cooling-off period later.
+    deleted_at = Column(DateTime, nullable=True)                          # ✅ NEW
+
+    shop_name = Column(String, nullable=True)
 
     # Automatically set to current time when the user registers.
     # server_default=func.now() lets the database set this value.

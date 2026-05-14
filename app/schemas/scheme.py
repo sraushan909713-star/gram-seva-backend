@@ -22,8 +22,10 @@ class SchemeCreate(BaseModel):
     description: str
     eligibility: str
     how_to_apply: str
+    documents_required: str        # ✅ ADD — mandatory
     category: SchemeCategory
     official_link: Optional[str] = None      # Optional — not all schemes have a website
+    youtube_link: Optional[str] = None        # ✅ ADD
     additional_info: Optional[str] = None    # Optional — for any extra details
 
 
@@ -37,8 +39,10 @@ class SchemeUpdate(BaseModel):
     description: Optional[str] = None
     eligibility: Optional[str] = None
     how_to_apply: Optional[str] = None
+    documents_required: Optional[str] = None        # ✅ ADD
     category: Optional[SchemeCategory] = None
     official_link: Optional[str] = None
+    youtube_link: Optional[str] = None        # ✅ ADD
     additional_info: Optional[str] = None
     is_active: Optional[bool] = None         # Admin can hide/show a scheme
 
@@ -55,8 +59,10 @@ class SchemeResponse(BaseModel):
     description: str
     eligibility: str
     how_to_apply: str
+    documents_required: str        # ✅ ADD
     category: SchemeCategory
     official_link: Optional[str] = None
+    youtube_link: Optional[str] = None        # ✅ ADD
     additional_info: Optional[str] = None
     is_active: bool
     created_at: datetime
@@ -77,6 +83,7 @@ class SchemeListResponse(BaseModel):
     description: str
     category: SchemeCategory
     is_active: bool
+    youtube_link: Optional[str] = None        # ✅ ADD
 
     class Config:
         from_attributes = True

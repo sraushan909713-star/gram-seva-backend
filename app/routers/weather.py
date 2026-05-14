@@ -32,7 +32,7 @@ def get_warning_level(rainfall_mm: float) -> str:
     Converts a rainfall amount (mm) into a human-readable warning level.
     Thresholds follow IMD standards used across India.
     """
-    if rainfall_mm <= 0:
+    if rainfall_mm <= 2.5:
         return "None"
     elif rainfall_mm <= 15:
         return "Low"
@@ -53,9 +53,11 @@ async def get_rain_alert():
         f"https://api.open-meteo.com/v1/forecast"
         f"?latitude={DURBE_LAT}"
         f"&longitude={DURBE_LON}"
-        f"&daily=precipitation_sum,temperature_2m_max,temperature_2m_min"   # Total rainfall per day in mm
-        f"&timezone=Asia%2FKolkata"   # IST timezone for correct date alignment
-        f"&forecast_days=7"           # 7-day forecast
+        f"&current_weather=true"
+        f"&hourly=temperature_2m"
+        f"&daily=precipitation_sum,temperature_2m_max,temperature_2m_min"
+        f"&timezone=Asia%2FKolkata"
+        f"&forecast_days=7"
     )
 
     try:
@@ -65,6 +67,11 @@ async def get_rain_alert():
             response = await client.get(url, timeout=10)
             response.raise_for_status()  # Raises error if API returns 4xx/5xx
             data = response.json()
+
+            print("FULL DATA:", data)  # 👈 ADD THIS
+            print("CURRENT WEATHER:", data.get("current_weather"))  # 👈 ADD THIS
+
+            current_temp = data.get("current_weather", {}).get("temperature", None)
 
     except httpx.TimeoutException:
         # Open-Meteo didn't respond in time
@@ -104,7 +111,8 @@ async def get_rain_alert():
         location=DURBE_LOCATION_NAME,
         today_rainfall_mm=today_rainfall,
         today_temp_max_c=forecast[0].temp_max_c,
-        today_temp_min_c=forecast[0].temp_min_c, 
+        today_temp_min_c=forecast[0].temp_min_c,
+        current_temp_c=current_temp,
         warning_level=today_warning,
         forecast=forecast,
         last_updated=datetime.now()

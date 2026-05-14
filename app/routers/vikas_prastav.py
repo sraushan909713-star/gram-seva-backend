@@ -52,6 +52,17 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
         raise HTTPException(status_code=403, detail="Access denied.")
     return current_user
 
+def require_verified(current_user: User = Depends(get_current_user)) -> User:
+    """Durbe Niwasi residents and admins can post complaints."""
+    if current_user.role in ("admin", "super_admin"):
+        return current_user
+    if not current_user.is_verified:
+        raise HTTPException(
+            status_code=403,
+            detail="Only verified Durbe Niwasi residents can post complaints."
+        )
+    return current_user
+
 
 # ─────────────────────────────────────────────
 # PUBLIC ENDPOINTS
@@ -73,7 +84,16 @@ def list_proposals(
         query = query.filter(VikasPrastav.category == category)
 
     # ✅ Most upvoted first — highest community mandate rises to top
-    return query.order_by(VikasPrastav.upvote_count.desc()).all()
+    proposals = query.order_by(VikasPrastav.upvote_count.desc()).all()
+    result = []
+    for p in proposals:
+        user = db.query(User).filter(User.id == p.posted_by).first()
+        result.append({
+            **{c.key: getattr(p, c.key) for c in p.__table__.columns},
+            'poster_name':  user.full_name if user else 'Unknown',
+            'poster_photo': user.profile_photo_url if user else None,
+        })
+    return result
 
 
 @router.get("/{proposal_id}", response_model=VikasPrastavResponse)
@@ -90,7 +110,12 @@ def get_proposal(proposal_id: str, db: Session = Depends(get_db)):
     if not proposal:
         raise HTTPException(status_code=404, detail="Proposal not found.")
 
-    return proposal
+    user = db.query(User).filter(User.id == proposal.posted_by).first()
+    return {
+        **{c.key: getattr(proposal, c.key) for c in proposal.__table__.columns},
+        'poster_name':  user.full_name if user else 'Unknown',
+        'poster_photo': user.profile_photo_url if user else None,
+    }
 
 
 # ─────────────────────────────────────────────
@@ -101,7 +126,7 @@ def get_proposal(proposal_id: str, db: Session = Depends(get_db)):
 def create_proposal(
     data: VikasPrastavCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_verified)
 ):
     """
     Submits a new development proposal.
@@ -131,7 +156,7 @@ def create_proposal(
 def upvote_proposal(
     proposal_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_verified)
 ):
     """
     Upvotes a development proposal.

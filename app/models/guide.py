@@ -1,10 +1,14 @@
 # app/models/guide.py
 # ─────────────────────────────────────────────────────────────
-# This defines the "guides" table in our database.
-# A guide is a step-by-step documentation written by Admin
-# to help villagers apply for government certificates and services.
-# Examples: Jati Praman Patra, Awaasiye Praman Patra, Ration Card
-# All guides are added manually by Admin after visiting the office.
+# Documentation Guides — step-by-step help for villagers
+# to apply for government certificates and services.
+#
+# Admin adds guides after visiting the office in person.
+# Villagers can browse and follow the steps from the app.
+#
+# Fields added vs original:
+#   - online_link: optional URL for documents that can be applied online
+#   - Updated GuideCategory enum with specific document types
 # ─────────────────────────────────────────────────────────────
 
 import uuid
@@ -14,70 +18,70 @@ from sqlalchemy.sql import func
 from app.database import Base
 
 
+# ─── Guide Category Enum ──────────────────────────────────────
+
 class GuideCategory(str, enum.Enum):
     """
-    What type of documentation is this guide for?
-    Used by the Flutter app to group guides into sections.
+    What type of document is this guide for?
+    Shown as filter chips in the Flutter app.
     """
-    certificate = "certificate"     # Jati, Awaasiye, Janm Praman Patra
-    welfare     = "welfare"         # Ration card, Pension, BPL card
-    land        = "land"            # Land records, Khasra, Naksha
-    education   = "education"       # Scholarship, School admission
-    health      = "health"          # Ayushman card, PHC registration
-    other       = "other"           # Anything that doesn't fit above
+    ration_card        = "ration_card"
+    birth_certificate  = "birth_certificate"
+    caste_certificate  = "caste_certificate"
+    income_certificate = "income_certificate"
+    aadhaar            = "aadhaar"
+    pension            = "pension"
+    land_records       = "land_records"
+    health             = "health"
+    education          = "education"
+    other              = "other"
 
+
+# ─── Guide Model ─────────────────────────────────────────────
 
 class Guide(Base):
     __tablename__ = "guides"
 
     # — Identity ──────────────────────────────────────────────
-    # UUID string ID — same pattern as schemes model
-    id = Column(
-        String,
-        primary_key=True,
-        default=lambda: str(uuid.uuid4())
-    )
-
-    # — Village tag ───────────────────────────────────────────
-    # Every record belongs to a village — same pattern as all models
+    id         = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     village_id = Column(String, nullable=False, default="1")
 
     # — Core guide information ─────────────────────────────────
-    title = Column(String, nullable=False)              # "Jati Praman Patra"
-    title_hindi = Column(String, nullable=True)         # "जाति प्रमाण पत्र"
-    description = Column(Text, nullable=False)          # Brief summary of what this document is
-    category = Column(
-        Enum(GuideCategory),
-        nullable=False,
-        default=GuideCategory.other
-    )
+    title        = Column(String, nullable=False)   # "Jati Praman Patra"
+    title_hindi  = Column(String, nullable=True)    # "जाति प्रमाण पत्र"
+    description  = Column(Text,   nullable=False)   # Brief summary
+    category     = Column(Enum(GuideCategory), nullable=False, default=GuideCategory.other)
 
     # — Office details ────────────────────────────────────────
-    # Admin fills these after visiting the office in person
-    office_name = Column(String, nullable=True)         # "Block Development Office, Atri"
-    office_address = Column(Text, nullable=True)        # "Near Bus Stand, Atri, Gaya"
-    contact_person = Column(String, nullable=True)      # "Clerk at Counter 3" (optional)
-    timings = Column(String, nullable=True)             # "10am–4pm, Mon–Fri"
-    approximate_cost = Column(String, nullable=True)    # "₹0 (Free)" or "₹50 for notary"
+    office_name    = Column(String, nullable=True)  # "Block Development Office, Atri"
+    office_address = Column(Text,   nullable=True)  # "Near Bus Stand, Atri, Gaya"
+    contact_person = Column(String, nullable=True)  # "Clerk at Counter 3"
+    timings        = Column(String, nullable=True)  # "10am–4pm, Mon–Fri"
 
-    # — The step-by-step process ──────────────────────────────
-    # Admin writes the exact steps a villager must follow.
+    # — Cost & time ───────────────────────────────────────────
+    approximate_cost = Column(String, nullable=True)  # "₹0 (Free)" or "₹50 for notary"
+    estimated_time   = Column(String, nullable=True)  # "7–10 working days"
+
+    # — Step-by-step process ──────────────────────────────────
     # Stored as plain text with numbered steps.
-    # Example: "1. Go to BDO office\n2. Ask for Form 16\n3. Fill form..."
+    # e.g. "1. Go to BDO office\n2. Ask for Form 16\n3. Fill form..."
     steps = Column(Text, nullable=False)
 
     # — Documents needed ──────────────────────────────────────
-    # Comma-separated list of documents required.
-    # Example: "Aadhar Card, Ration Card, Passport Photo, Father's name proof"
+    # Newline or comma separated list of required documents
     documents_needed = Column(Text, nullable=True)
 
+    # — Online application link ───────────────────────────────  ✅ NEW
+    # Optional — some documents can be applied online
+    # e.g. "https://serviceonline.bihar.gov.in"
+    online_link = Column(String, nullable=True)
+
     # — Tips from Admin ───────────────────────────────────────
-    # Insider advice Admin learned from visiting the office.
-    # Example: "Go before 11am — gets very crowded after lunch"
+    # Insider advice from visiting the office
+    # e.g. "Go before 11am — gets very crowded after lunch"
     tips = Column(Text, nullable=True)
 
     # — Visibility ────────────────────────────────────────────
-    # Soft delete — same pattern as schemes and contacts
     is_active = Column(Boolean, default=True, nullable=False)
 
     # — Timestamps ────────────────────────────────────────────
